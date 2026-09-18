@@ -207,9 +207,19 @@
   <div class="app-header">
     <div class="app-title">📝 Discord フォーラム概要自動投稿ツール</div>
     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
+      <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
+
       <button id="login-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; background-color: var(--dc-accent); color: white;">Googleでログイン</button>
+      
+      <div id="email-auth-area" style="display: flex; align-items: center; gap: 6px; background: var(--dc-bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--dc-border);">
+        <input type="email" id="auth-email" placeholder="メールアドレス" style="width: 140px; padding: 4px 8px; font-size: 0.8rem;">
+        <input type="password" id="auth-password" placeholder="パスワード(6文字以上)" style="width: 130px; padding: 4px 8px; font-size: 0.8rem;">
+        <button id="email-login-btn" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">ログイン</button>
+        <button id="email-signup-btn" class="btn btn-secondary btn-success" style="padding: 4px 8px; font-size: 0.75rem;">新規登録</button>
+      </div>
+
       <button id="logout-btn" class="btn btn-secondary btn-danger" style="display: none; padding: 6px 12px; font-size: 0.85rem;">ログアウト</button>
+      
       <button type="button" class="btn btn-secondary" onclick="resetForm()">🧹 フォーム初期化</button>
       <button type="button" class="btn btn-secondary" onclick="exportData()">💾 設定JSON保存</button>
     </div>
@@ -1418,8 +1428,16 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
 <script type="module">
   // 基本のFirebaseモジュール
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  // 追加：認証用のモジュール
-  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+  // 認証用のモジュールにメール/パスワード用を追加
+  import { 
+    getAuth, 
+    signInWithPopup, 
+    GoogleAuthProvider, 
+    signOut, 
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword 
+  } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAZnPBuUY5m-N0AmtP41bGKSyG3_4d22cs",
@@ -1430,25 +1448,62 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
     appId: "1:714872282390:web:32681c17137bfbbee58437"
   };
 
-  // Firebaseと認証の初期化
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // HTMLの要素を取得（※ app-container の参照は削除しました）
+  // 要素の取得
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const loginStatus = document.getElementById('login-status');
+  const emailAuthArea = document.getElementById('email-auth-area');
+  const emailInput = document.getElementById('auth-email');
+  const passwordInput = document.getElementById('auth-password');
+  const emailLoginBtn = document.getElementById('email-login-btn');
+  const emailSignupBtn = document.getElementById('email-signup-btn');
 
-  // ログインボタンが押された時の処理
+  // Googleログイン
   loginBtn.addEventListener('click', () => {
     signInWithPopup(auth, provider).catch((error) => {
-      console.error("ログインエラー:", error);
-      alert("ログインに失敗しました");
+      console.error("Googleログインエラー:", error);
+      alert("Googleログインに失敗しました: " + error.message);
     });
   });
 
-  // ログアウトボタンが押された時の処理
+  // メールアドレスで新規登録
+  emailSignupBtn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if (!email || !password) return alert("メールアドレスとパスワードを入力してください");
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log("新規登録＆ログイン成功", userCredential.user);
+        alert("アカウントを作成し、ログインしました！");
+      })
+      .catch((error) => {
+        console.error("新規登録エラー:", error);
+        alert("登録に失敗しました: " + error.message);
+      });
+  });
+
+  // メールアドレスでログイン
+  emailLoginBtn.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    if (!email || !password) return alert("メールアドレスとパスワードを入力してください");
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        console.log("ログイン成功", userCredential.user);
+      })
+      .catch((error) => {
+        console.error("ログインエラー:", error);
+        alert("ログインに失敗しました（メールアドレスまたはパスワードが間違っています）");
+      });
+  });
+
+  // ログアウト
   logoutBtn.addEventListener('click', () => {
     signOut(auth).catch((error) => {
       console.error("ログアウトエラー:", error);
@@ -1458,18 +1513,23 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
   // ログイン状態の監視
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // ログイン中の表示（ツールは常に表示されたまま）
-      loginStatus.innerText = `${user.displayName} さん`;
+      // ログイン中の表示（メールアドレス、またはGoogleの表示名）
+      const displayName = user.displayName || user.email;
+      loginStatus.innerText = `${displayName} さん`;
       loginBtn.style.display = "none";
+      emailAuthArea.style.display = "none"; // ログイン中は入力欄を隠す
       logoutBtn.style.display = "inline-block";
 
       console.log("【メモ】あなたのUID: " + user.uid);
       
     } else {
-      // 未ログイン時の表示（ツールは隠さず、そのまま操作可能）
+      // 未ログイン時の表示
       loginStatus.innerText = "未ログイン";
       loginBtn.style.display = "inline-block";
+      emailAuthArea.style.display = "flex"; // 未ログイン時は入力欄を表示
       logoutBtn.style.display = "none";
+      emailInput.value = "";
+      passwordInput.value = "";
     }
   });
 </script>
