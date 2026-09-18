@@ -732,6 +732,42 @@
     loadFormatConfigToUI(); loadSettingsToUI(); loadBotAvatarToUI(); renderChannelCheckboxes();
     populateScenarioDBSelect(); renderDBView(); renderHistoryTable();
     renderBlockUI(); renderPreview();
+
+    // 🔑 【追加】ログイン関連ボタンのイベントリスナー紐付け
+    const openAuthBtn = document.getElementById('open-auth-modal-btn');
+    if (openAuthBtn) {
+      openAuthBtn.addEventListener('click', openAuthModal);
+    }
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    // メールログイン・新規登録・Googleログインボタンのプレースホルダー紐付け
+    const emailLoginBtn = document.getElementById('email-login-btn');
+    if (emailLoginBtn) {
+      emailLoginBtn.addEventListener('click', () => {
+        alert("メールログイン処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
+
+    const emailSignupBtn = document.getElementById('email-signup-btn');
+    if (emailSignupBtn) {
+      emailSignupBtn.addEventListener('click', () => {
+        alert("新規登録処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
+
+    const googleBtn = document.getElementById('modal-google-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', () => {
+        alert("Googleログイン処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
   };
 
   function switchTab(tabId, evt) {
