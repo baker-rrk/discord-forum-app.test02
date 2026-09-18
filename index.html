@@ -207,7 +207,7 @@
   <div class="app-header">
     <div class="app-title">📝 Discord フォーラム概要自動投稿ツール</div>
     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-      <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
+            <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
       <button id="login-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; background-color: var(--dc-accent); color: white;">Googleでログイン</button>
       <button id="logout-btn" class="btn btn-secondary btn-danger" style="display: none; padding: 6px 12px; font-size: 0.85rem;">ログアウト</button>
       <button type="button" class="btn btn-secondary" onclick="resetForm()">🧹 フォーム初期化</button>
@@ -425,6 +425,7 @@
   </div>
 </div>
 
+<!-- ダイレクト編集モーダル -->
 <!-- ダイレクト編集モーダル -->
 <div id="editScenarioModal" class="modal-overlay">
   <div class="modal-card">
@@ -710,7 +711,7 @@
     return item ? item.val : "";
   }
 
-  function autoSyncToDBOnPost(title, targetChannelNames) {
+function autoSyncToDBOnPost(title, targetChannelNames) {
     if (!title) return;
     let existingIdx = appState.scenarios.findIndex(s => s.title === title);
     let existingPosted = existingIdx !== -1 ? (appState.scenarios[existingIdx].postedChannels || []) : [];
@@ -755,6 +756,7 @@
   
   function closeEditScenarioModal() { document.getElementById('editScenarioModal').style.display = 'none'; }
   
+  // ▼ 新規追加: 編集モーダル用の画像クリア機能
   function clearEditScenarioImage() {
     document.getElementById('eImageUrl').value = "";
     document.getElementById('eDropText').innerText = '📷 画像ファイルをここにドロップ または クリックして選択';
@@ -853,7 +855,7 @@
 
   function populateScenarioDBSelect() {
     const sel = document.getElementById('dbScenarioSelect'); sel.innerHTML = '<option value="">-- 保存済みシナリオを選択して自動入力 --</option>';
-    appState.scenarios.forEach((s, i) => sel.appendChild(new Option(`${s.title} (${s.system \vert{}\vert{} '未指定'} / ${s.playerCount || '未指定'})`, i)));
+    appState.scenarios.forEach((s, i) => sel.appendChild(new Option(`${s.title} (${s.system || '未指定'} / ${s.playerCount || '未指定'})`, i)));
   }
 
   function loadScenarioFromDB(idx) {
@@ -1144,6 +1146,7 @@
       if (index > 0) { const d = document.createElement('div'); d.className = "split-divider"; d.innerHTML = `<span>✂️ ここから ${index + 1} 通目のメッセージ</span>`; container.appendChild(d); }
       const p = document.createElement('div'); 
       
+      // ▼ FIX: プレビュー上のみ :link: を絵文字として表示する
       p.innerText = chunk.text.replace(/:link:/g, '🔗');
       
       chunk.images.forEach(img => {
@@ -1432,7 +1435,7 @@
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
 
-  // HTMLの要素を取得
+  // HTMLの要素を取得（※ app-container の参照は削除しました）
   const loginBtn = document.getElementById('login-btn');
   const logoutBtn = document.getElementById('logout-btn');
   const loginStatus = document.getElementById('login-status');
@@ -1455,6 +1458,7 @@
   // ログイン状態の監視
   onAuthStateChanged(auth, (user) => {
     if (user) {
+      // ログイン中の表示（ツールは常に表示されたまま）
       loginStatus.innerText = `${user.displayName} さん`;
       loginBtn.style.display = "none";
       logoutBtn.style.display = "inline-block";
@@ -1462,6 +1466,7 @@
       console.log("【メモ】あなたのUID: " + user.uid);
       
     } else {
+      // 未ログイン時の表示（ツールは隠さず、そのまま操作可能）
       loginStatus.innerText = "未ログイン";
       loginBtn.style.display = "inline-block";
       logoutBtn.style.display = "none";
