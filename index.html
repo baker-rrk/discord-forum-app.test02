@@ -84,7 +84,7 @@
     label { display: block; font-size: 0.825rem; font-weight: 700; margin-bottom: 6px; color: var(--dc-text-muted); text-transform: uppercase; }
     label .req { color: var(--dc-red); margin-left: 4px; }
 
-    input[type="text"], input[type="url"], textarea, select {
+    input[type="text"], input[type="url"], input[type="email"], input[type="password"], textarea, select {
       width: 100%;
       padding: 10px 12px;
       background-color: var(--dc-bg-primary);
@@ -207,23 +207,58 @@
   <div class="app-header">
     <div class="app-title">📝 Discord フォーラム概要自動投稿ツール</div>
     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-      <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
-
-      <button id="login-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; background-color: var(--dc-accent); color: white;">Googleでログイン</button>
       
-      <div id="email-auth-area" style="display: flex; align-items: center; gap: 6px; background: var(--dc-bg-primary); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--dc-border);">
-        <input type="email" id="auth-email" placeholder="メールアドレス" style="width: 140px; padding: 4px 8px; font-size: 0.8rem;">
-        <input type="password" id="auth-password" placeholder="パスワード(6文字以上)" style="width: 130px; padding: 4px 8px; font-size: 0.8rem;">
-        <button id="email-login-btn" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;">ログイン</button>
-        <button id="email-signup-btn" class="btn btn-secondary btn-success" style="padding: 4px 8px; font-size: 0.75rem;">新規登録</button>
-      </div>
+      <!-- 未ログイン時に表示する「ログイン / 新規登録」ボタン -->
+      <button id="open-auth-modal-btn" class="btn btn-secondary" style="padding: 6px 14px; font-size: 0.85rem; background-color: var(--dc-accent); color: white;">🔑 ログイン / 新規登録</button>
 
-      <button id="logout-btn" class="btn btn-secondary btn-danger" style="display: none; padding: 6px 12px; font-size: 0.85rem;">ログアウト</button>
+      <!-- ログイン中に表示するユーザー名 & ログアウトボタン -->
+      <div id="logged-in-user-area" style="display: none; align-items: center; gap: 8px;">
+        <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-normal); font-weight: bold;"></span>
+        <button id="logout-btn" class="btn btn-secondary btn-danger" style="padding: 4px 10px; font-size: 0.75rem;">ログアウト</button>
+      </div>
       
       <button type="button" class="btn btn-secondary" onclick="resetForm()">🧹 フォーム初期化</button>
       <button type="button" class="btn btn-secondary" onclick="exportData()">💾 設定JSON保存</button>
     </div>
   </div>
+
+<!-- 🔑 ログイン・新規登録用モーダル（ポップアップ） -->
+<div id="authModal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 420px;">
+    <div class="card-title">
+      🔑 ログイン / 新規登録
+      <button type="button" class="btn-sort" onclick="closeAuthModal()">✕</button>
+    </div>
+
+    <!-- Googleログイン -->
+    <div style="margin-bottom: 20px;">
+      <button type="button" id="modal-google-btn" class="btn" style="background-color: #4285F4; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <span>🌐</span> Googleアカウントでログイン
+      </button>
+    </div>
+
+    <!-- 区切り線 -->
+    <div style="text-align: center; color: var(--dc-text-muted); font-size: 0.8rem; margin-bottom: 16px; position: relative;">
+      <span style="background: var(--dc-bg-secondary); padding: 0 10px; position: relative; z-index: 1;">またはメールアドレスで</span>
+      <div style="position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: var(--dc-border); z-index: 0;"></div>
+    </div>
+
+    <!-- メール / パスワード入力欄 -->
+    <div class="form-group">
+      <label>メールアドレス</label>
+      <input type="email" id="auth-email" placeholder="example@email.com">
+    </div>
+    <div class="form-group">
+      <label>パスワード (6文字以上)</label>
+      <input type="password" id="auth-password" placeholder="パスワードを入力">
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 20px;">
+      <button type="button" id="email-login-btn" class="btn btn-secondary" style="width: 100%;">ログイン</button>
+      <button type="button" id="email-signup-btn" class="btn btn-success" style="width: 100%;">新規登録</button>
+    </div>
+  </div>
+</div>
 
 <div class="nav-tabs">
   <button class="tab-btn active" onclick="switchTab('postTab', event)">📝 投稿作成</button>
@@ -351,7 +386,7 @@
         <div class="discord-tags" id="pvTags"></div>
 
         <div class="discord-msg">
-          <img id="pvAvatar" class="discord-avatar" src="[https://cdn.discordapp.com/embed/avatars/0.png](https://cdn.discordapp.com/embed/avatars/0.png)">
+          <img id="pvAvatar" class="discord-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png">
           <div style="flex:1;">
             <div>
               <span class="discord-username" id="pvUsername">概要投稿Bot</span>
@@ -365,7 +400,7 @@
         <div id="pvReplySection" class="discord-reply-preview" style="display:none; margin-top:16px;">
           <div class="discord-header">💬 自動追記返信プレビュー</div>
           <div class="discord-msg">
-            <img id="pvAvatarReply" class="discord-avatar" src="[https://cdn.discordapp.com/embed/avatars/0.png](https://cdn.discordapp.com/embed/avatars/0.png)">
+            <img id="pvAvatarReply" class="discord-avatar" src="https://cdn.discordapp.com/embed/avatars/0.png">
             <div>
               <span class="discord-username" id="pvUsernameReply">概要投稿Bot</span>
               <span class="discord-bot-tag">BOT</span>
@@ -435,7 +470,6 @@
   </div>
 </div>
 
-<!-- ダイレクト編集モーダル -->
 <!-- ダイレクト編集モーダル -->
 <div id="editScenarioModal" class="modal-overlay">
   <div class="modal-card">
@@ -698,6 +732,42 @@
     loadFormatConfigToUI(); loadSettingsToUI(); loadBotAvatarToUI(); renderChannelCheckboxes();
     populateScenarioDBSelect(); renderDBView(); renderHistoryTable();
     renderBlockUI(); renderPreview();
+
+    // 🔑 【追加】ログイン関連ボタンのイベントリスナー紐付け
+    const openAuthBtn = document.getElementById('open-auth-modal-btn');
+    if (openAuthBtn) {
+      openAuthBtn.addEventListener('click', openAuthModal);
+    }
+
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    // メールログイン・新規登録・Googleログインボタンのプレースホルダー紐付け
+    const emailLoginBtn = document.getElementById('email-login-btn');
+    if (emailLoginBtn) {
+      emailLoginBtn.addEventListener('click', () => {
+        alert("メールログイン処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
+
+    const emailSignupBtn = document.getElementById('email-signup-btn');
+    if (emailSignupBtn) {
+      emailSignupBtn.addEventListener('click', () => {
+        alert("新規登録処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
+
+    const googleBtn = document.getElementById('modal-google-btn');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', () => {
+        alert("Googleログイン処理をここに実装します。");
+        closeAuthModal();
+      });
+    }
   };
 
   function switchTab(tabId, evt) {
@@ -721,7 +791,7 @@
     return item ? item.val : "";
   }
 
-function autoSyncToDBOnPost(title, targetChannelNames) {
+  function autoSyncToDBOnPost(title, targetChannelNames) {
     if (!title) return;
     let existingIdx = appState.scenarios.findIndex(s => s.title === title);
     let existingPosted = existingIdx !== -1 ? (appState.scenarios[existingIdx].postedChannels || []) : [];
@@ -766,7 +836,6 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
   
   function closeEditScenarioModal() { document.getElementById('editScenarioModal').style.display = 'none'; }
   
-  // ▼ 新規追加: 編集モーダル用の画像クリア機能
   function clearEditScenarioImage() {
     document.getElementById('eImageUrl').value = "";
     document.getElementById('eDropText').innerText = '📷 画像ファイルをここにドロップ または クリックして選択';
@@ -789,33 +858,6 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
     ['mTitle','mSystem','mShopUrl','mPlayerCount','mPlayTime','mReqSkills','mRecSkills','mSemiRecSkills','mRostrite','mAftereffect','mImageUrl','mTrailer','mNotes'].forEach(id => document.getElementById(id).value = "");
     document.getElementById('mDropText').innerText = '📷 画像ファイルをここにドロップ または クリックして選択';
     document.getElementById('addScenarioModal').style.display = 'flex';
-  }
-function openAddScenarioModal() {
-    // ... 
-  }
-
-  // 🔑 ログイン・新規登録モーダルを開く
-  function openAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) {
-      modal.style.display = 'flex';
-    }
-  }
-
-  // 🔑 ログイン・新規登録モーダルを閉じる
-  function closeAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) {
-      modal.style.display = 'none';
-    }
-  }
-
-  // 🚪 ログアウト処理
-  function handleLogout() {
-    if (confirm("ログアウトしますか？")) {
-      // 必要に応じてログアウト時の状態クリア処理をここに記述
-      alert("ログアウトしました。");
-    }
   }
   function closeAddScenarioModal() { document.getElementById('addScenarioModal').style.display = 'none'; }
   function handleManualAddScenario(e) {
@@ -892,7 +934,7 @@ function openAddScenarioModal() {
 
   function populateScenarioDBSelect() {
     const sel = document.getElementById('dbScenarioSelect'); sel.innerHTML = '<option value="">-- 保存済みシナリオを選択して自動入力 --</option>';
-    appState.scenarios.forEach((s, i) => sel.appendChild(new Option(`${s.title} (${s.system || '未指定'} / ${s.playerCount || '未指定'})`, i)));
+    appState.scenarios.forEach((s, i) => sel.appendChild(new Option(`${s.title} (${s.system \vert{}\vert{} '未指定'} / ${s.playerCount || '未指定'})`, i)));
   }
 
   function loadScenarioFromDB(idx) {
@@ -1159,7 +1201,7 @@ function openAddScenarioModal() {
   function renderPreview() {
     const title = document.getElementById('title').value || "スレッドタイトル";
     const botName = document.getElementById('botName').value || "概要投稿Bot";
-    const botAvatarSrc = appState.botAvatarData || "[https://cdn.discordapp.com/embed/avatars/0.png](https://cdn.discordapp.com/embed/avatars/0.png)";
+    const botAvatarSrc = appState.botAvatarData || "https://cdn.discordapp.com/embed/avatars/0.png";
 
     document.getElementById('pvThreadTitle').innerText = title; 
     document.getElementById('pvUsername').innerText = botName;
@@ -1183,7 +1225,6 @@ function openAddScenarioModal() {
       if (index > 0) { const d = document.createElement('div'); d.className = "split-divider"; d.innerHTML = `<span>✂️ ここから ${index + 1} 通目のメッセージ</span>`; container.appendChild(d); }
       const p = document.createElement('div'); 
       
-      // ▼ FIX: プレビュー上のみ :link: を絵文字として表示する
       p.innerText = chunk.text.replace(/:link:/g, '🔗');
       
       chunk.images.forEach(img => {
@@ -1450,12 +1491,18 @@ function openAddScenarioModal() {
       statusMsg.style.display = "block";
     }
   }
+
+  // 🔑 ログインモーダルの開閉関数
+  function openAuthModal() {
+    document.getElementById('authModal').style.display = 'flex';
+  }
+  function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
+  }
 </script>
 
 <script type="module">
-  // 基本のFirebaseモジュール
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-  // 認証用のモジュールにメール/パスワード用を追加
   import { 
     getAuth, 
     signInWithPopup, 
@@ -1480,24 +1527,35 @@ function openAddScenarioModal() {
   const provider = new GoogleAuthProvider();
 
   // 要素の取得
-  const loginBtn = document.getElementById('login-btn');
-  const logoutBtn = document.getElementById('logout-btn');
+  const openAuthModalBtn = document.getElementById('open-auth-modal-btn');
+  const loggedInUserArea = document.getElementById('logged-in-user-area');
   const loginStatus = document.getElementById('login-status');
-  const emailAuthArea = document.getElementById('email-auth-area');
+  const logoutBtn = document.getElementById('logout-btn');
+  
+  const modalGoogleBtn = document.getElementById('modal-google-btn');
   const emailInput = document.getElementById('auth-email');
   const passwordInput = document.getElementById('auth-password');
   const emailLoginBtn = document.getElementById('email-login-btn');
   const emailSignupBtn = document.getElementById('email-signup-btn');
 
-  // Googleログイン
-  loginBtn.addEventListener('click', () => {
-    signInWithPopup(auth, provider).catch((error) => {
-      console.error("Googleログインエラー:", error);
-      alert("Googleログインに失敗しました: " + error.message);
-    });
+  // 「ログイン / 新規登録」ボタンを押したらモーダルを開く
+  openAuthModalBtn.addEventListener('click', () => {
+    openAuthModal();
   });
 
-  // メールアドレスで新規登録
+  // モーダル内のGoogleログイン
+  modalGoogleBtn.addEventListener('click', () => {
+    signInWithPopup(auth, provider)
+      .then(() => {
+        closeAuthModal();
+      })
+      .catch((error) => {
+        console.error("Googleログインエラー:", error);
+        alert("Googleログインに失敗しました: " + error.message);
+      });
+  });
+
+  // モーダル内のメールアドレスで新規登録
   emailSignupBtn.addEventListener('click', () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
@@ -1507,6 +1565,7 @@ function openAddScenarioModal() {
       .then((userCredential) => {
         console.log("新規登録＆ログイン成功", userCredential.user);
         alert("アカウントを作成し、ログインしました！");
+        closeAuthModal();
       })
       .catch((error) => {
         console.error("新規登録エラー:", error);
@@ -1514,7 +1573,7 @@ function openAddScenarioModal() {
       });
   });
 
-  // メールアドレスでログイン
+  // モーダル内のメールアドレスでログイン
   emailLoginBtn.addEventListener('click', () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
@@ -1523,6 +1582,7 @@ function openAddScenarioModal() {
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         console.log("ログイン成功", userCredential.user);
+        closeAuthModal();
       })
       .catch((error) => {
         console.error("ログインエラー:", error);
@@ -1540,21 +1600,18 @@ function openAddScenarioModal() {
   // ログイン状態の監視
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // ログイン中の表示（メールアドレス、またはGoogleの表示名）
+      // ログイン中の表示
       const displayName = user.displayName || user.email;
       loginStatus.innerText = `${displayName} さん`;
-      loginBtn.style.display = "none";
-      emailAuthArea.style.display = "none"; // ログイン中は入力欄を隠す
-      logoutBtn.style.display = "inline-block";
+      openAuthModalBtn.style.display = "none";
+      loggedInUserArea.style.display = "flex";
 
       console.log("【メモ】あなたのUID: " + user.uid);
       
     } else {
       // 未ログイン時の表示
-      loginStatus.innerText = "未ログイン";
-      loginBtn.style.display = "inline-block";
-      emailAuthArea.style.display = "flex"; // 未ログイン時は入力欄を表示
-      logoutBtn.style.display = "none";
+      openAuthModalBtn.style.display = "inline-block";
+      loggedInUserArea.style.display = "none";
       emailInput.value = "";
       passwordInput.value = "";
     }
