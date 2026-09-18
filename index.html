@@ -204,21 +204,16 @@
 </head>
 <body>
 
-  <div id="auth-container" style="text-align: center; margin-bottom: 20px; padding: 16px; background-color: var(--dc-bg-secondary); border-radius: 8px; border: 1px solid var(--dc-border);">
-    <span id="login-status" style="margin-right: 15px; font-weight: bold;">ログインしていません</span>
-    <button id="login-btn" style="padding: 8px 16px; background-color: var(--dc-accent); color: white; border: none; border-radius: 4px; cursor: pointer;">Googleでログイン</button>
-    <button id="logout-btn" style="display: none; padding: 8px 16px; background-color: var(--dc-red); color: white; border: none; border-radius: 4px; cursor: pointer;">ログアウト</button>
+  <div class="app-header">
+    <div class="app-title">📝 Discord フォーラム概要自動投稿ツール</div>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span id="login-status" style="font-size: 0.85rem; color: var(--dc-text-muted);">未ログイン</span>
+      <button id="login-btn" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; background-color: var(--dc-accent); color: white;">Googleでログイン</button>
+      <button id="logout-btn" class="btn btn-secondary btn-danger" style="display: none; padding: 6px 12px; font-size: 0.85rem;">ログアウト</button>
+      <button type="button" class="btn btn-secondary" onclick="resetForm()">🧹 フォーム初期化</button>
+      <button type="button" class="btn btn-secondary" onclick="exportData()">💾 設定JSON保存</button>
+    </div>
   </div>
-
-  <div id="app-container" style="display: none;">
-
-<div class="app-header">
-  <div class="app-title">📝 Discord フォーラム概要自動投稿ツール</div>
-  <div>
-    <button type="button" class="btn btn-secondary" onclick="resetForm()">🧹 フォーム初期化</button>
-    <button type="button" class="btn btn-secondary" onclick="exportData()">💾 設定JSON保存</button>
-  </div>
-</div>
 
 <div class="nav-tabs">
   <button class="tab-btn active" onclick="switchTab('postTab', event)">📝 投稿作成</button>
@@ -1461,20 +1456,17 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
     });
   });
 
-  // ログイン状態の監視（ページ読み込み時やログイン・ログアウト時に自動で走る）
+  // ログイン状態の監視
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      // ▼ログイン成功時の画面表示
       loginStatus.innerText = `${user.displayName} さんとしてログイン中`;
       loginBtn.style.display = "none";
       logoutBtn.style.display = "inline-block";
       appContainer.style.display = "block"; // ツールを表示する
 
-      // ★超重要：次のステップ（データベースのロック）で使うあなたのIDです
       console.log("【メモしてね】あなたのUID: " + user.uid);
       
     } else {
-      // ▼ログアウト時の画面表示
       loginStatus.innerText = "ツールを使用するにはログインしてください";
       loginBtn.style.display = "inline-block";
       logoutBtn.style.display = "none";
@@ -1482,8 +1474,6 @@ function autoSyncToDBOnPost(title, targetChannelNames) {
     }
   });
 </script>
-
-</div>
 
 </body>
 </html>
