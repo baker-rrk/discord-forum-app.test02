@@ -859,6 +859,30 @@
     document.getElementById('mDropText').innerText = '📷 画像ファイルをここにドロップ または クリックして選択';
     document.getElementById('addScenarioModal').style.display = 'flex';
   }
+
+  // 🔑 ログイン・新規登録モーダルを開く
+  function openAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  // 🔑 ログイン・新規登録モーダルを閉じる
+  function closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  // 🚪 ログアウト処理
+  function handleLogout() {
+    if (confirm("ログアウトしますか？")) {
+      // 必要に応じてログアウト時の状態クリア処理をここに記述
+      alert("ログアウトしました。");
+    }
+  }
   function closeAddScenarioModal() { document.getElementById('addScenarioModal').style.display = 'none'; }
   function handleManualAddScenario(e) {
     e.preventDefault();
